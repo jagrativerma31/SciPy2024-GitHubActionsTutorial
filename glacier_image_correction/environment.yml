@@ -1,4 +1,4 @@
-name: image-correction
+name: image-correlation
 channels:
   - conda-forge
   - defaults
