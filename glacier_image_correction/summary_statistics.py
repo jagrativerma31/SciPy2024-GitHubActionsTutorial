@@ -50,10 +50,10 @@ def combine_ds(data_dir, file_type='horizontal_velocity'):
 
 def main():
     # read in tifs
-    veloc_ds = combine_ds(data_dir='glacier_image_correlation', file_type='horizontal_velocity')
+    veloc_ds = combine_ds(data_dir='glacier_image_correction', file_type='horizontal_velocity')
     # calculate and save median velocity
     veloc_da_median = veloc_ds.horizontal_velocity.median(dim='dates')
-    # veloc_da_median.rio.to_raster('glacier_image_correlation/median_horizontal_velocity.tif')
+    # veloc_da_median.rio.to_raster('glacier_image_correction/median_horizontal_velocity.tif')
     # save standard deviation of velocity
     veloc_da_stdev = veloc_ds.horizontal_velocity.std(dim='dates')
     # veloc_da_stdev.rio.to_raster('glacier_image_correlation/stdev_horizontal_velocity.tif')
@@ -87,7 +87,7 @@ def main():
     ax[2].set_ylabel('')
     f.tight_layout()
     
-    f.savefig('glacier_image_correlation/velocity_summary_statistics.png', dpi=300)
+    f.savefig('glacier_image_correction/velocity_summary_statistics.png', dpi=300)
 
 if __name__ == "__main__":
    main()
