@@ -22,7 +22,7 @@ on:
             default: 'autoRIFT'
             type: string
 
-  # Must duplicate inputs for workflow_call (https://github.com/orgs/community/discussions/39357)
+  # Must duplicate inputs for workflow_call
   workflow_call:
     inputs:
         img1_product_name:
@@ -51,17 +51,21 @@ jobs:
               uses: mamba-org/setup-micromamba@v1
               with:
                 cache-environment: true
-                environment-file: glacier_image_correction/environment.yml
+                # Fixed: Removed folder prefix
+                environment-file: environment.yml
 
             - name: Modify autoRIFT Package
-            # current release has deprecated numpy functions https://github.com/nasa-jpl/autoRIFT/issues/97
+              # Fixed: Replaced manual path with dynamic detection
               run: |
                 git clone https://github.com/gbrencher/autoRIFT.git
-                cp -f autoRIFT/geo_autoRIFT/autoRIFT/autoRIFT.py /home/runner/micromamba/envs/image-correlation/lib/python3.12/site-packages/autoRIFT/
+                AUTORIFT_DIR=$(python -c "import autoRIFT; print(autoRIFT.__path__[0])")
+                echo "Found autoRIFT at: $AUTORIFT_DIR"
+                cp -f autoRIFT/geo_autoRIFT/autoRIFT/autoRIFT.py "$AUTORIFT_DIR/"
                 
             - name: Download Data and Run autoRIFT Software
+              # Fixed: Removed folder prefix
               run: |
-                python glacier_image_correction/image_correlation.py ${{ inputs.img1_product_name }} ${{ inputs.img2_product_name }}
+                python image_correlation.py ${{ inputs.img1_product_name }} ${{ inputs.img2_product_name }}
 
             - name: Upload Velocity Map as Artifact
               uses: actions/upload-artifact@v4
