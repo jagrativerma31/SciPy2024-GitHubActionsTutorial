@@ -1,41 +1,38 @@
-# Batch process many image pairs
 name: batch_image_correlation
 run-name: batch image correlation ${{ inputs.npairs }} connections
 
 on:
   workflow_dispatch:
     inputs:
-        cloud_cover:
-            type: string
-            required: true
-            description: percent cloud cover allowed in images (0-100)
-            default: '10'
-        start_month:
-            type: choice
-            required: true
-            description: first month to search (Best: 10)
-            default: '10'
-            options: ['1','2','3','4','5','6','7','8','9','10','11','12']
-        stop_month:
-            type: choice
-            required: true
-            description: last month to search (Best: 12)
-            default: '12'
-            options: ['1','2','3','4','5','6','7','8','9','10','11','12']
-        npairs:
-            type: choice
-            required: true
-            description: number of pairs per image
-            default: '1'
-            options: ['3','2','1']
-            
+      cloud_cover:
+        type: string
+        required: true
+        description: percent cloud cover allowed (0-100)
+        default: '10'
+      start_month:
+        type: choice
+        required: true
+        description: first month (Best: 10)
+        default: '10'
+        options: ['1','2','3','4','5','6','7','8','9','10','11','12']
+      stop_month:
+        type: choice
+        required: true
+        description: last month (Best: 12)
+        default: '12'
+        options: ['1','2','3','4','5','6','7','8','9','10','11','12']
+      npairs:
+        type: choice
+        required: true
+        description: number of pairs per image
+        default: '1'
+        options: ['3','2','1']
+
 jobs:
   S2_search:
     runs-on: ubuntu-latest
     outputs:
-      IMG_IDS: ${{ steps.S2_search.outputs.IMAGE_DATES }}
-      MATRIX: ${{ steps.S2_search.outputs.MATRIX_PARAMS_COMBINATIONS }}
-    # FIXED: REMOVED the 'defaults' block from here to avoid the shell error
+      MATRIX: ${{ steps.S2_search_step.outputs.MATRIX_PARAMS_COMBINATIONS }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -47,8 +44,7 @@ jobs:
           environment-file: glacier_image_correction/environment.yml
 
       - name: Search aws for S2 Imagery
-        id: S2_search
-        # FIXED: Added shell directly to this step
+        id: S2_search_step
         shell: bash -el {0}
         run: | 
           python glacier_image_correction/s2_search.py ${{ inputs.cloud_cover }} ${{ inputs.start_month }} ${{ inputs.stop_month }} ${{ inputs.npairs }}
