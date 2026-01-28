@@ -25,15 +25,14 @@ def download_s2(img1_name, img2_name, bbox):
     URL = "https://earth-search.aws.element84.com/v1"
     catalog = pystac_client.Client.open(URL)
 
-    def get_img(name):
+   def get_img(name):
         search = catalog.search(collections=["sentinel-2-l2a"], query=[f's2:product_uri={name}'])
         items = search.item_collection()
         
-        # FIX: Added epsg=32645 to handle the missing CRS metadata error
-        stack = stackstac.stack(items, epsg=32645)
+        # FIX: Specify assets=["nir"] to avoid the multi-band 'visual' asset error
+        stack = stackstac.stack(items, epsg=32645, assets=["nir"])
         
         aoi = gpd.GeoDataFrame({'geometry':[shape(bbox)]})
-        # Clip to your Zemu Glacier bounding box
         return stack.rio.clip_box(*aoi.total_bounds, crs=4326).to_dataset(dim='band')
 
     return get_img(img1_name), get_img(img2_name)
