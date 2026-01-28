@@ -25,11 +25,11 @@ def download_s2(img1_name, img2_name, bbox):
     URL = "https://earth-search.aws.element84.com/v1"
     catalog = pystac_client.Client.open(URL)
 
-   def get_img(name):
+    def get_img(name):
         search = catalog.search(collections=["sentinel-2-l2a"], query=[f's2:product_uri={name}'])
         items = search.item_collection()
         
-        # FIX: Specify assets=["nir"] to avoid the multi-band 'visual' asset error
+        # FIXED: Specified assets=["nir"] and epsg=32645 to avoid multi-band and CRS errors
         stack = stackstac.stack(items, epsg=32645, assets=["nir"])
         
         aoi = gpd.GeoDataFrame({'geometry':[shape(bbox)]})
@@ -142,33 +142,16 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    # hardcoding a bbox for now
+    # UPDATED: Re-applied Zemu Glacier bbox coordinates for Sikkim
     bbox = {
-    "type": "Polygon",
-    "coordinates": [
-          [
-            [
-              84.31369037937048,
-              28.774215826417233
-            ],
-            [
-              84.31369037937048,
-              28.65931200469386
-            ],
-            [
-              84.47924591303064,
-              28.65931200469386
-            ],
-            [
-              84.47924591303064,
-              28.774215826417233
-            ],
-            [
-              84.31369037937048,
-              28.774215826417233
-            ]
-          ]
-        ],
+        "type": "Polygon",
+        "coordinates": [[
+            [88.165, 27.802],
+            [88.165, 27.669],
+            [88.404, 27.669],
+            [88.404, 27.802],
+            [88.165, 27.802]
+        ]]
     }
 
     # download Sentinel-2 images
@@ -177,7 +160,7 @@ def main():
     img1 = img1_ds.nir.squeeze().values
     img2 = img2_ds.nir.squeeze().values
     
-    # scale search limit with temporal baseline assuming max velocity 1000 m/yr (100 px/yr)
+    # scale search limit assuming max velocity 1000 m/yr (100 px/yr)
     search_limit_x = search_limit_y = round(((((img2_ds.time.isel(time=0) - img1_ds.time.isel(time=0)).dt.days)*100)/365.25).item())
     
     # run autoRIFT feature tracking
@@ -189,4 +172,4 @@ def main():
     ds.veloc_horizontal.rio.to_raster(f'S2_{args.img1_product_name[11:19]}_{args.img2_product_name[11:19]}_horizontal_velocity.tif')
 
 if __name__ == "__main__":
-   main()
+    main()
