@@ -13,14 +13,14 @@ on:
         start_month:
             type: choice
             required: true
-            description: first month of year to search for images
-            default: '6'
+            description: first month to search (Best: 10)
+            default: '10'
             options: ['1','2','3','4','5','6','7','8','9','10','11','12']
         stop_month:
             type: choice
             required: true
-            description: last month of year to search for images
-            default: '9'
+            description: last month to search (Best: 12)
+            default: '12'
             options: ['1','2','3','4','5','6','7','8','9','10','11','12']
         npairs:
             type: choice
@@ -30,15 +30,12 @@ on:
             options: ['3','2','1']
             
 jobs:
-  # The output of this job is a JSON mapping for a matrix job
   S2_search:
     runs-on: ubuntu-latest
     outputs:
       IMG_IDS: ${{ steps.S2_search.outputs.IMAGE_DATES }}
       MATRIX: ${{ steps.S2_search.outputs.MATRIX_PARAMS_COMBINATIONS }}
-    defaults:
-      run:
-        shell: bash -el {0}
+    # FIXED: REMOVED the 'defaults' block from here to avoid the shell error
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -51,10 +48,11 @@ jobs:
 
       - name: Search aws for S2 Imagery
         id: S2_search
+        # FIXED: Added shell directly to this step
+        shell: bash -el {0}
         run: | 
           python glacier_image_correction/s2_search.py ${{ inputs.cloud_cover }} ${{ inputs.start_month }} ${{ inputs.stop_month }} ${{ inputs.npairs }}
 
-  # A matrix job that calls a reuseable workflow
   autoRIFT:
     needs: S2_search
     strategy:
