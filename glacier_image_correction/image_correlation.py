@@ -21,38 +21,22 @@ import argparse
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-def download_s2(img1_product_name, img2_product_name, bbox):
-    '''
-    Download a pair of Sentinel-2 images acquired on given dates over a given bounding box
-    '''
-    # We use the api from element84 to query the data
+def download_s2(img1_name, img2_name, bbox):
     URL = "https://earth-search.aws.element84.com/v1"
     catalog = pystac_client.Client.open(URL)
 
-    search = catalog.search(
-    collections=["sentinel-2-l2a"],
-    query=[f's2:product_uri={img1_product_name}'])
-    
-    img1_items = search.item_collection()
-    img1_full = stackstac.stack(img1_items)
+    def get_img(name):
+        search = catalog.search(collections=["sentinel-2-l2a"], query=[f's2:product_uri={name}'])
+        items = search.item_collection()
+        
+        # FIX: Added epsg=32645 to handle the missing CRS metadata error
+        stack = stackstac.stack(items, epsg=32645)
+        
+        aoi = gpd.GeoDataFrame({'geometry':[shape(bbox)]})
+        # Clip to your Zemu Glacier bounding box
+        return stack.rio.clip_box(*aoi.total_bounds, crs=4326).to_dataset(dim='band')
 
-    search = catalog.search(
-    collections=["sentinel-2-l2a"],
-    query=[f's2:product_uri={img2_product_name}'])
-
-    # Check how many items were returned
-    img2_items = search.item_collection()
-    img2_full = stackstac.stack(img2_items)
-
-    aoi = gpd.GeoDataFrame({'geometry':[shape(bbox)]})
-    # crop images to aoi
-    img1_clipped = img1_full.rio.clip_box(*aoi.total_bounds,crs=4326) 
-    img2_clipped = img2_full.rio.clip_box(*aoi.total_bounds,crs=4326)
-    
-    img1_ds = img1_clipped.to_dataset(dim='band')
-    img2_ds = img2_clipped.to_dataset(dim='band')
-
-    return img1_ds, img2_ds 
+    return get_img(img1_name), get_img(img2_name)
 
 def run_autoRIFT(img1, img2, skip_x=3, skip_y=3, min_x_chip=16, max_x_chip=64,
                  preproc_filter_width=3, mpflag=4, search_limit_x=30, search_limit_y=30):
