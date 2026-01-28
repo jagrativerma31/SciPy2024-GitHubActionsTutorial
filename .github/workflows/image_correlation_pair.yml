@@ -2,7 +2,6 @@
 name: image_correlation_pair
 run-name: ${{ inputs.workflow_name }}
 
-# Set workflow input parameters and defaults
 on:
   workflow_dispatch:
     inputs:
@@ -10,29 +9,23 @@ on:
             type: string
             required: true
             description: S2 image 1 product name
-            default: S2A_MSIL2A_20200629T054641_N0500_R048_T43SEA_20230505T184918.SAFE
         img2_product_name:
             type: string
             required: true
             description: S2 image 2 product name 
-            default: S2B_MSIL2A_20200922T054639_N0500_R048_T43SEA_20230624T184729.SAFE
         workflow_name:
             description: 'Custom workflow name'
             required: false
             default: 'autoRIFT'
             type: string
 
-  # Must duplicate inputs for workflow_call
   workflow_call:
     inputs:
         img1_product_name:
             type: string
-            description: S2 image 1 product name 
         img2_product_name:
             type: string
-            description: S2 image 2 product name 
         workflow_name:
-            description: 'Custom workflow name'
             type: string
 
 jobs:
@@ -51,11 +44,11 @@ jobs:
               uses: mamba-org/setup-micromamba@v1
               with:
                 cache-environment: true
-                # Fixed: Removed folder prefix
-                environment-file: environment.yml
+                # Pointing to the file inside your subfolder
+                environment-file: glacier_image_correction/environment.yml
 
             - name: Modify autoRIFT Package
-              # Fixed: Replaced manual path with dynamic detection
+              # Fixed: Dynamically finding the folder to avoid the cp error
               run: |
                 git clone https://github.com/gbrencher/autoRIFT.git
                 AUTORIFT_DIR=$(python -c "import autoRIFT; print(autoRIFT.__path__[0])")
@@ -63,9 +56,9 @@ jobs:
                 cp -f autoRIFT/geo_autoRIFT/autoRIFT/autoRIFT.py "$AUTORIFT_DIR/"
                 
             - name: Download Data and Run autoRIFT Software
-              # Fixed: Removed folder prefix
+              # Pointing to the script inside your subfolder
               run: |
-                python image_correlation.py ${{ inputs.img1_product_name }} ${{ inputs.img2_product_name }}
+                python glacier_image_correction/image_correlation.py ${{ inputs.img1_product_name }} ${{ inputs.img2_product_name }}
 
             - name: Upload Velocity Map as Artifact
               uses: actions/upload-artifact@v4
