@@ -156,15 +156,29 @@ def main():
 
     # download Sentinel-2 images
     img1_ds, img2_ds = download_s2(args.img1_product_name, args.img2_product_name, bbox)
-    # grab near infrared band only
-    img1 = img1_ds.nir.squeeze().values
-    img2 = img2_ds.nir.squeeze().values
+    
+    # grab near infrared band only as raw numpy arrays
+    img1_raw = img1_ds.nir.squeeze().values
+    img2_raw = img2_ds.nir.squeeze().values
+
+    # FIX: Ensure both images have the exact same dimensions
+    # This prevents the IndexError in autoRIFT.uniform_data_type()
+    min_rows = min(img1_raw.shape[0], img2_raw.shape[0])
+    min_cols = min(img1_raw.shape[1], img2_raw.shape[1])
+    
+    img1 = img1_raw[:min_rows, :min_cols]
+    img2 = img2_raw[:min_rows, :min_cols]
+    
+    # Also trim the parent datasets to match for final coordinate alignment
+    img1_ds = img1_ds.isel(x=slice(0, min_cols), y=slice(0, min_rows))
+    img2_ds = img2_ds.isel(x=slice(0, min_cols), y=slice(0, min_rows))
     
     # scale search limit assuming max velocity 1000 m/yr (100 px/yr)
     search_limit_x = search_limit_y = round(((((img2_ds.time.isel(time=0) - img1_ds.time.isel(time=0)).dt.days)*100)/365.25).item())
     
     # run autoRIFT feature tracking
     obj = run_autoRIFT(img1, img2, search_limit_x=search_limit_x, search_limit_y=search_limit_y)
+    
     # postprocess offsets
     ds = prep_outputs(obj, img1_ds, img2_ds)
 
